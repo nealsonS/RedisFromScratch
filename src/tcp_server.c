@@ -63,6 +63,10 @@ int main(){
   // binding to an address
   struct sockaddr_in addr = {};
   addr.sin_family = AF_INET;
+
+  // uses endian numbers because our CPU is little endian
+  // but networking needs Big-endian numbers
+  // if left unconverted, the ports and ips will be backwards
   addr.sin_port = htons(1234); // store using Endian numbers
   addr.sin_addr.s_addr = htonl(0); // wildcard of 0.0.0.0
 
