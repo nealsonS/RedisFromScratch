@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "./io.h"
 
 // PSEUDOCODE
 
@@ -26,6 +27,7 @@
 //     close(conn_fd)
 
 // do something function
+// one write one read
 static void do_something(int connfd){
   char rbuf[64] = {};
 
@@ -41,10 +43,56 @@ static void do_something(int connfd){
 
   char wbuf[] = "world";
   write(connfd, wbuf, strlen(wbuf));
-
 }
 
+const size_t k_max_msg = 4096;
+const size_t header_size = 4;
+
+static int32_t one_request(int connfd){
+  char rbuf[header_size + k_max_msg];
+  int errno = 0;
+
+  // parse header and get msg_length
+  int32_t err = read_full(connfd, rbuf, header_size);
+
+  if (err) {
+    printf(errno==0 ? "EOF" : "read() error");
+    return err;
+  }
+
+  // set msg_length as len
+  uint32_t len = 0;
+  memcpy(&len, rbuf, header_size);
+
+  if(len > k_max_msg){
+    printf("msg too long");
+    return -1;
+  }
+
+  // read the next N bytes of the socket request
+  err = read_full(connfd, &rbuf[header_size], len);
+  if(err){
+    printf("read() body error");
+    return err;
+  }
+
+  printf("client says: %s\n", &rbuf[header_size]);
+
+  // reply using same protocol
+  const char reply[] = "world";
+  char wbuf[header_size + sizeof(reply)];
+  len = (uint32_t)strlen(reply);
+
+  memcpy(wbuf, &len, header_size);
+  memcpy(&wbuf[4], &reply, len);
+
+  return write_full(connfd, wbuf, header_size + len);
+}
+
+
 int main(){
+  const char* ip_addr = "0.0.0.0";
+  const u_int16_t port = 1234;
 
   // create a TCP socket using IPv4 (AF_INET)
   // use TCP using SOCK_STREAM
@@ -68,8 +116,14 @@ int main(){
   // uses endian numbers because our CPU is little endian
   // but networking needs Big-endian numbers
   // if left unconverted, the ports and ips will be backwards
-  addr.sin_port = htons(1234); // store using Endian numbers
-  addr.sin_addr.s_addr = htonl(0); // wildcard of 0.0.0.0
+  addr.sin_port = htons(port); // store using Endian numbers
+  // addr.sin_addr.s_addr = htonl(ip_addr); // wildcard of 0.0.0.0
+
+    // convert ip string to binary in a structure
+  if (inet_pton(AF_INET, ip_addr, &(addr.sin_addr)) <= 0) {
+      perror("inet_pton failed");
+      return 1;
+  }
 
   // bind socket with address
   int rv = bind(fd, (const struct sockaddr*) &addr, sizeof(addr));
@@ -80,6 +134,7 @@ int main(){
   // SOMAXCONN basically size of queue and is 4096 on Linux
   rv = listen(fd, SOMAXCONN);
   // if (rv) {die("listen()");}
+  printf("Now listening at:\nIP: %s\nPort: %u\nProtocol: %s", ip_addr, port, "tcp");
 
   while (1){
     // accept
@@ -93,7 +148,12 @@ int main(){
     if (connfd < 0) {
       continue; //error
     }
-    do_something(connfd);
+    // do_something(connfd);
+
+    // process in a for loop (basically one request at a time)
+    while(1){
+      int32_t err = one_request(connfd);
+    }
     close(fd);
   }
 
