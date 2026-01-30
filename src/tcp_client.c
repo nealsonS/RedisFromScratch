@@ -50,6 +50,7 @@ static int32_t query(int fd, const char *text){
   }
 
   printf("server says: %s\n", &rbuf[4]);
+  return 0;
 
 }
 int main(){
@@ -71,10 +72,12 @@ int main(){
   // ssize_t n = read(fd, rbuf, sizeof(rbuf) - 1);
   int32_t err = query(fd, "hello1");
   if (err){
+    printf("1");
     goto L_DONE;
   }
   err = query(fd, "hello2");
   if (err){
+    printf("2");
     goto L_DONE;
   }
 

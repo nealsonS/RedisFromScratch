@@ -134,7 +134,7 @@ int main(){
   // SOMAXCONN basically size of queue and is 4096 on Linux
   rv = listen(fd, SOMAXCONN);
   // if (rv) {die("listen()");}
-  printf("Now listening at:\nIP: %s\nPort: %u\nProtocol: %s", ip_addr, port, "tcp");
+  printf("Now listening at:\nIP: %s\nPort: %u\nProtocol: %s\n", ip_addr, port, "tcp");
 
   while (1){
     // accept
@@ -153,9 +153,14 @@ int main(){
     // process in a for loop (basically one request at a time)
     while(1){
       int32_t err = one_request(connfd);
+      if (err){
+        break;
+      }
     }
-    close(fd);
+    close(connfd);
+
   }
+
 
   return 0;
 }
