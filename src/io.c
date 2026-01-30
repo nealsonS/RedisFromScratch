@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 
 // func to read in a loop
 // bcos incoming requests can be less than buffer size
@@ -15,7 +16,9 @@ int32_t read_full(int fd, char* buf, size_t n) {
     ssize_t rv = read(fd, buf, n);
     
     // if EOF
-    if (rv <= 0) {
+    // handle edge case where 0 bytes read but
+    // not EOF, just signal interrupted
+    if (rv <= 0 & errno != EINTR) {
       return -1; //error or unexpected EOF
     }
 
