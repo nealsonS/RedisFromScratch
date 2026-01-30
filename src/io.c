@@ -17,9 +17,12 @@ int32_t read_full(int fd, char* buf, size_t n) {
     
     // if EOF
     // handle edge case where 0 bytes read but
-    // not EOF, just signal interrupted
+    // not EOF, just read is interrupted
     if (rv <= 0 & errno != EINTR) {
       return -1; //error or unexpected EOF
+    }
+    if (rv == -1 & errno == EINTR){
+      continue;
     }
 
     // check that we only read n bytes (or less)

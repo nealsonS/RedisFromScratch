@@ -51,8 +51,9 @@ static int32_t query(int fd, const char *text){
 
   printf("server says: %s\n", &rbuf[4]);
   return 0;
-
 }
+
+
 int main(){
   int fd = socket(AF_INET, SOCK_STREAM, 0);
   
